@@ -20,42 +20,41 @@ application {
 
 def osName = System.getProperty('os.name').toLowerCase(Locale.ROOT)
 
-// 自定义任务：生成完整的质量报告
+// Custom task: Generate a complete quality report
 task qualityCheck {
     group = 'verification'
-    description = '运行所有质量检查'
+    description = 'Run all quality checks'
     dependsOn test, jacocoTestReport, jacocoTestCoverageVerification
 }
 
-// 自定义任务：生成测试和覆盖率报告
+// Custom task: Generate test and coverage report
 task testWithCoverage {
     group = 'verification'
-    description = '运行测试并生成覆盖率报告'
+    description = 'Run tests and generate coverage report'
     dependsOn test, jacocoTestReport
 
     doLast {
-        println "测试报告: ${file('build/reports/tests/test/index.html')}"
-        println "覆盖率报告: ${file('build/reports/jacoco/index.html')}"
+        println "Test report: ${file('build/reports/tests/test/index.html')}"
+        println "Coverage report: ${file('build/reports/jacoco/index.html')}"
     }
 }
 
 task fullCheck {
     group = 'verification'
-    description = '清理、编译、测试并运行所有质量检查'
+    description = 'Clean, compile, test and run all quality checks'
     dependsOn clean, qualityCheck
 
     doLast {
         println """
-        =====================================
-        质量检查报告已生成：
-        =====================================
-        测试报告:      build/reports/tests/test/index.html
-        覆盖率报告:    build/reports/jacoco/index.html  
-        =====================================
-        """
+========================================
+Quality check report generated:
+======================================
+Test report: build/reports/tests/test/index.html
+Coverage report: build/reports/jacoco/index.html
+=========================================
+"""
     }
 }
-
 
 task debug(type: JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
@@ -147,21 +146,17 @@ runtime {
     }
 
 }
-// 测试配置
 test {
     useJUnitPlatform()
 
-    // 测试输出详情
     testLogging {
         events "passed", "skipped", "failed"
         exceptionFormat "full"
         showStandardStreams = false
     }
 
-    // 自动生成覆盖率报告
     finalizedBy jacocoTestReport
 
-    // JVM参数
     jvmArgs '-Xmx1g'
 }
 
