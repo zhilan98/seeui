@@ -4,32 +4,50 @@ import com.shatteredpixel.shatteredpixeldungeon.Dungeon;
 import com.shatteredpixel.shatteredpixeldungeon.Statistics;
 import com.shatteredpixel.shatteredpixeldungeon.scenes.PixelScene;
 import com.watabou.noosa.BitmapText;
-import com.watabou.noosa.NinePatch;
+import com.watabou.noosa.ColorBlock;
 import com.watabou.noosa.Game;
 import com.watabou.noosa.ui.Component;
 
 public class StatsPanel extends Component {
 
-    private NinePatch bg;
-    private BitmapText statsText;
+    private ColorBlock bg;
+    private BitmapText[] textLines;
     private float elapsed = 0f;
+    private ColorBlock border;
+    private static long gameStartTime = 0;
+    private static long currentFloorStartTime = 0;
+    private static int lastFloor = -1;
 
-    private static final float PANEL_WIDTH = 120;
-    private static final float PANEL_HEIGHT = 48;
+    private static final float PANEL_WIDTH = 105;
+    private static final float PANEL_HEIGHT = 78;
+    private static final float LINE_HEIGHT = 11;
+    private static final float BORDER_WIDTH = 2;
 
     public StatsPanel() {
         super();
 
-        // 用和StatusPane一样的资源
-        String asset = com.shatteredpixel.shatteredpixeldungeon.Assets.Interfaces.STATUS;
+        border = new ColorBlock(PANEL_WIDTH + BORDER_WIDTH * 2,
+                PANEL_HEIGHT + BORDER_WIDTH * 2,
+                0xFF404040);
+        add(border);
 
-        bg = new NinePatch(asset, 0, 0, 128, 36, 85, 0, 45, 0);
-        bg.size(PANEL_WIDTH, PANEL_HEIGHT);
+        bg = new ColorBlock(PANEL_WIDTH, PANEL_HEIGHT, 0xAA808080);
         add(bg);
 
-        statsText = new BitmapText(PixelScene.pixelFont);
-        statsText.hardlight(0xFFFFFF); // 白色字体
-        add(statsText);
+
+        textLines = new BitmapText[6];
+        for (int i = 0; i < 6; i++) {
+            textLines[i] = new BitmapText(PixelScene.pixelFont);
+            textLines[i].hardlight(0xFFFFFF);
+            add(textLines[i]);
+        }
+
+        if (gameStartTime == 0) {
+            gameStartTime = System.currentTimeMillis();
+        }
+
+        currentFloorStartTime = System.currentTimeMillis();
+        lastFloor = Dungeon.depth;
 
         setStatsText();
     }
@@ -38,6 +56,12 @@ public class StatsPanel extends Component {
     public void update() {
         super.update();
         elapsed += Game.elapsed;
+
+        if (Dungeon.depth != lastFloor) {
+            currentFloorStartTime = System.currentTimeMillis();
+            lastFloor = Dungeon.depth;
+        }
+
         if (elapsed >= 1f) {
             elapsed = 0f;
             setStatsText();
@@ -46,31 +70,80 @@ public class StatsPanel extends Component {
 
     private void setStatsText() {
         long now = System.currentTimeMillis();
-        long floorSec = (now - Statistics.floorStartMillis) / 1000;
-        long totalSec = (now - Statistics.gameStartMillis) / 1000;
-        statsText.text(String.format(
-                "伤害输出: %d\n承受伤害: %d\n击杀: %d\n楼层: %d\n本层: %02d:%02d\n总计: %02d:%02d",
-                Statistics.damageDealt, Statistics.damageTaken, Statistics.enemiesSlain,
-                Dungeon.depth,
-                floorSec / 60, floorSec % 60,
-                totalSec / 60, totalSec % 60
-        ));
-        statsText.measure();
-        layout();
+
+        long floorTime = (now - currentFloorStartTime) / 1000;
+
+        long totalTime = (now - gameStartTime) / 1000;
+
+        if (Statistics.gameStartMillis > 0 && Statistics.gameStartMillis <= now) {
+            long statsTotal = (now - Statistics.gameStartMillis) / 1000;
+            if (statsTotal > 0 && statsTotal < 999999) {
+                totalTime = statsTotal;
+            }
+        }
+        if (Statistics.floorStartMillis > 0 && Statistics.floorStartMillis <= now) {
+            long statsFloor = (now - Statistics.floorStartMillis) / 1000;
+            if (statsFloor >= 0 && statsFloor < 999999) {
+                floorTime = statsFloor;
+            }
+        }
+
+        textLines[0].text("DMG DEALT: " + Statistics.damageDealt);
+        textLines[1].text("DMG TAKEN: " + Statistics.damageTaken);
+        textLines[2].text("KILLS: " + Statistics.enemiesSlain);
+        textLines[3].text("FLOOR: " + Dungeon.depth);
+        textLines[4].text("F-TIME: " + formatTime(floorTime));
+        textLines[5].text("T-TIME: " + formatTime(totalTime));
+
+        for (BitmapText line : textLines) {
+            line.measure();
+        }
+    }
+
+    private String formatTime(long seconds) {
+        if (seconds < 0) seconds = 0;
+        if (seconds > 359999) seconds = 359999; // 99:59:59 max
+
+        long hours = seconds / 3600;
+        long minutes = (seconds % 3600) / 60;
+        long secs = seconds % 60;
+
+        if (hours > 0) {
+            return String.format("%02d:%02d:%02d", hours, minutes, secs);
+        } else {
+            return String.format("%02d:%02d", minutes, secs);
+        }
+    }
+
+    public static void resetGameTime() {
+        gameStartTime = System.currentTimeMillis();
+        currentFloorStartTime = gameStartTime;
+        lastFloor = 1;
+    }
+
+    public static void resetFloorTime() {
+        currentFloorStartTime = System.currentTimeMillis();
     }
 
     @Override
     protected void layout() {
         super.layout();
-        // 显示在屏幕右上角，微调避免重叠
-        float x = Game.width - PANEL_WIDTH - 5;
-        float y = 5;
-        bg.x = x;
-        bg.y = y;
-        bg.size(PANEL_WIDTH, PANEL_HEIGHT);
+        if (camera != null) {
+            float x = 5;
+            float y = 5;
 
-        statsText.x = x + 8;
-        statsText.y = y + 4;
-        statsText.measure();
+            border.x = x - BORDER_WIDTH;
+            border.y = y - BORDER_WIDTH;
+            border.size(PANEL_WIDTH + BORDER_WIDTH * 2, PANEL_HEIGHT + BORDER_WIDTH * 2);
+
+            bg.x = x;
+            bg.y = y;
+            bg.size(PANEL_WIDTH, PANEL_HEIGHT);
+
+            for (int i = 0; i < textLines.length; i++) {
+                textLines[i].x = x + 5;
+                textLines[i].y = y + 5 + (i * LINE_HEIGHT);
+            }
+        }
     }
 }

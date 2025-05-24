@@ -30,11 +30,11 @@ import java.util.HashSet;
 
 public class Statistics {
 
-	public static int damageDealt = 0;     // 总造成伤害
-	public static int damageTaken = 0;     // 总受伤害
+	public static int damageDealt = 0;     // Total damage done
+	public static int damageTaken = 0;     // Total damage taken
 
-	public static long gameStartMillis = 0;    // 游戏开始时间
-	public static long floorStartMillis = 0;   // 当前层开始时间
+	public static long gameStartMillis = 0;    // Game start time
+	public static long floorStartMillis = 0;  // Start time of the current layer
 
 
 	public static int goldCollected;

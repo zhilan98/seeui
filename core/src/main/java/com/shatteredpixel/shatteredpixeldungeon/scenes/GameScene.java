@@ -644,10 +644,9 @@ public class GameScene extends PixelScene {
 			}
 		}
 
-
-		// ...所有UI相关代码后
 		statsPanel = new StatsPanel();
-		statsPanel.setRect(uiCamera.width - 120, 10, 120, 48);
+		statsPanel.camera = uiCamera;
+		statsPanel.setRect(5, 5, 140, 80 );
 		add(statsPanel);
 	}
 	

@@ -6,4 +6,64 @@ sourceCompatibility = targetCompatibility = appJavaCompatibility
 dependencies {
     api project(':SPD-classes')
     implementation project(':services')
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.hamcrest:hamcrest-core:1.3'
+    testImplementation 'org.mockito:mockito-core:3.12.4'
+}
+
+apply plugin: 'checkstyle'
+apply plugin: 'jacoco'
+
+dependencies {
+
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.hamcrest:hamcrest-core:1.3'
+}
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ['src/main/java']
+        }
+    }
+    test {
+        java {
+            srcDirs = ['src/test/java']
+        }
+    }
+}
+
+test {
+    useJUnit()
+    testLogging {
+        events "passed", "skipped", "failed"
+        exceptionFormat "full"
+    }
+}
+
+
+jacoco {
+    toolVersion = "0.8.7"
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true
+        csv.required = false
+        html.required = true
+        html.outputLocation = file("${buildDir}/reports/jacoco/test/html")
+    }
+}
+
+task qualityCheck {
+    dependsOn 'checkstyleMain', 'test', 'jacocoTestReport'
+    description = 'Run all code quality checks'
+
+    doLast {
+        println "=== Quality check completed ==="
+        println "CheckStyle report: ${buildDir}/reports/checkstyle/"
+        println "Test report: ${buildDir}/reports/tests/test/index.html"
+        println "Coverage report: ${buildDir}/reports/jacoco/test/html/index.html"
+    }
 }
